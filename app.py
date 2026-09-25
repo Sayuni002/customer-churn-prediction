@@ -142,12 +142,84 @@ total_charges = st.number_input(
     value=500.0
 )
 
-predict_button = st.button(
-    "Predict Churn"
-)
+
+
+import streamlit as st
+import pandas as pd
+import joblib
+
+model = joblib.load("model/churn_model.pkl")
+scaler = joblib.load("model/scaler.pkl")
+model_columns = joblib.load("model/model_columns.pkl")
+numerical_columns = joblib.load("model/numerical_columns.pkl")
+
+
+
+predict_button = st.button("Predict Churn")
 
 if predict_button:
-    st.info(
-        "Prediction functionality will be connected to the "
-        "trained model in the next step."
+    customer_data = {
+        "gender": gender,
+        "SeniorCitizen": 1 if senior_citizen == "Yes" else 0,
+        "Partner": partner,
+        "Dependents": dependents,
+        "tenure": tenure,
+        "PhoneService": phone_service,
+        "MultipleLines": multiple_lines,
+        "InternetService": internet_service,
+        "OnlineSecurity": online_security,
+        "OnlineBackup": online_backup,
+        "DeviceProtection": device_protection,
+        "TechSupport": tech_support,
+        "StreamingTV": streaming_tv,
+        "StreamingMovies": streaming_movies,
+        "Contract": contract,
+        "PaperlessBilling": paperless_billing,
+        "PaymentMethod": payment_method,
+        "MonthlyCharges": monthly_charges,
+        "TotalCharges": total_charges
+    }
+
+    input_df = pd.DataFrame([customer_data])
+
+    input_encoded = pd.get_dummies(
+        input_df,
+        drop_first=True,
+        dtype=int
     )
+
+    input_encoded = input_encoded.reindex(
+        columns=model_columns,
+        fill_value=0
+    )
+
+    
+
+    input_encoded[numerical_columns] = scaler.transform(
+    input_encoded[numerical_columns]
+    )
+
+    prediction = model.predict(input_encoded)[0]
+
+    probability = model.predict_proba(input_encoded)[0][1]
+
+    st.divider()
+
+    st.subheader("Prediction Result")
+
+    if prediction == 1:
+        st.error("⚠️ Customer is predicted to CHURN")
+    else:
+        st.success("✅ Customer is predicted to NOT CHURN")
+
+    st.write(
+        f"Estimated Churn Probability: **{probability * 100:.2f}%**"
+    )
+
+
+st.divider()
+
+st.caption(
+    "Model: Tuned Random Forest | "
+    "This application is a machine learning portfolio project."
+)
