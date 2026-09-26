@@ -182,19 +182,28 @@ if predict_button:
 
     input_df = pd.DataFrame([customer_data])
 
-    input_encoded = pd.get_dummies(
-        input_df,
-        drop_first=True,
-        dtype=int
-    )
+    
+    input_encoded = pd.DataFrame(
+    0,
+    index=[0],
+    columns=model_columns,
+    dtype=float
+)
 
-    input_encoded = input_encoded.reindex(
-        columns=model_columns,
-        fill_value=0
-    )
+# Add numerical values
+    for col in numerical_columns:
+       if col in customer_data:
+        input_encoded.at[0, col] = customer_data[col]
+
+# Encode categorical values
+    for col, value in customer_data.items():
+       if col not in numerical_columns:
+        dummy_column = f"{col}_{value}"
+
+        if dummy_column in model_columns:
+            input_encoded.at[0, dummy_column] = 1
 
     
-
     input_encoded[numerical_columns] = scaler.transform(
     input_encoded[numerical_columns]
     )
@@ -216,7 +225,7 @@ if predict_button:
         f"Estimated Churn Probability: **{probability * 100:.2f}%**"
     )
 
-
+    st.progress(float(probability))
 st.divider()
 
 st.caption(
